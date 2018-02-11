@@ -10,7 +10,7 @@ files/directories over the network to devices in the same LAN.
 Checkout this [link][136] to get started.
 
 Not really useful over the internet because security concerns.
-It can be tunnelled by SSH but thats quite slow and ther are
+It can be tunnelled by SSH but thats quite slow and there are
 better options.
 
 Based on [Alpine Linux][131] from my [alpine-s6][132] image with
@@ -45,7 +45,9 @@ docker pull woahbase/alpine-nfs:x86_64
 * Needs `--privileged`.
 
 * Directories are exported from `/etc/exports`.  By default it
-  exposes `/data` at `/`.
+  exposes `/data` at `/`. Remount the exports file with your own
+  configuration, and modify `/etc/fstab.nfs` in the client
+  accordingly.
 
 * Default configuration listens to ports `111` and `2049`.
 
