@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+
+NFSMODE="${NFSMODE:-CLIENT}"
+
+if [ "${NFSMODE}" = "CLIENT" ];
+then
+    # dont start services in client mode
+    mv /etc/services.d/{rpcbind,mountd} /defaults/
+
+    # make sure can mount nfs
+    which mount.nfs && (echo "nfs installed - OK") || (
+        echo "installing nfs-utils" \
+        && apk add --no-cache --purge -uU nfs-utils \
+        && rm -rf /var/cache/apk/* /tmp/*
+    )
+
+    # update /etc/fstab from /etc/fstab.nfs
+    # and mount
+    if [ -f /etc/fstab.nfs ];
+    then
+        echo "found fstab.nfs";
+        cat /etc/fstab.nfs >> /etc/fstab;
+        mount -v -a -t nfs
+        mount -v -a -t nfs4
+    else
+        echo "nothing to mount";
+    fi;
+fi;
+
