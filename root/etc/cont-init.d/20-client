@@ -14,14 +14,18 @@ then
         && rm -rf /var/cache/apk/* /tmp/*
     )
 
+    # start rpc as root
+    rpcbind -f &
+    sleep 5;
+
     # update /etc/fstab from /etc/fstab.nfs
     # and mount
     if [ -f /etc/fstab.nfs ];
     then
         echo "found fstab.nfs";
         cat /etc/fstab.nfs >> /etc/fstab;
-        mount -v -a -t nfs
-        mount -v -a -t nfs4
+        mount -v -a -o sync,hard -t nfs
+        mount -v -a -o sync,hard -t nfs4
     else
         echo "nothing to mount";
     fi;

@@ -40,11 +40,11 @@ BUILDFLAGS := --rm --force-rm --compress -f $(CURDIR)/Dockerfile_$(ARCH) -t $(IM
 CACHEFLAGS := --no-cache=true --pull
 MOUNTFLAGS := -v $(CURDIR)/data:/data
 NAMEFLAGS  := --name docker_$(CNTNAME) --hostname $(CNTNAME)
-OTHERFLAGS := -v /etc/hosts:/etc/hosts:ro -v /etc/localtime:/etc/localtime:ro -e TZ=Asia/Kolkata
+OTHERFLAGS := # -v /etc/hosts:/etc/hosts:ro -v /etc/localtime:/etc/localtime:ro -e TZ=Asia/Kolkata
 PORTFLAGS  := -p 111:111/tcp -p 111:111/udp -p 2049:2049/tcp -p 2049:2049/udp
 PROXYFLAGS := --build-arg http_proxy=$(http_proxy) --build-arg https_proxy=$(https_proxy) --build-arg no_proxy=$(no_proxy)
 
-RUNFLAGS   := -c 256 -m 256m -e PGID=$(PGID) -e PUID=$(PUID) --privileged -e NFSMODE=$(NFSMODE)
+RUNFLAGS   := -c 256 -m 256m -e PGID=$(PGID) -e PUID=$(PUID) --privileged
 
 # -- }}}
 
@@ -82,10 +82,10 @@ rm : stop
 	docker rm -f docker_$(CNTNAME)
 
 run :
-	docker run --rm -it $(NAMEFLAGS) $(RUNFLAGS) $(PORTFLAGS) $(MOUNTFLAGS) $(OTHERFLAGS) $(IMAGETAG)
+	docker run --rm -it $(NAMEFLAGS) $(RUNFLAGS) $(PORTFLAGS) $(MOUNTFLAGS) $(OTHERFLAGS) -e NFSMODE=SERVER $(IMAGETAG)
 
 client : # test in another container in local
-	docker run --rm -it $(NAMEFLAGS) $(RUNFLAGS) $(OTHERFLAGS) -e NFSMODE=CLIENT --link=docker_nfs $(IMAGETAG) /bin/bash
+	docker run --rm -it $(NAMEFLAGS) $(RUNFLAGS) $(OTHERFLAGS) -e NFSMODE=CLIENT -v $(CURDIR)/fstab.nfs:/etc/fstab.nfs:ro $(IMAGETAG) /bin/bash
 
 rshell :
 	docker exec -u root -it docker_$(CNTNAME) $(SHCOMMAND)
