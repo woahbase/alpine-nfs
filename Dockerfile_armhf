@@ -6,7 +6,7 @@ ARG PUID=1001
 ARG PGID=1001
 #
 RUN set -xe \
-    && apk add --no-cache --purge -uU nfs-utils \
+    && apk add --no-cache --purge -uU libnfs nfs-utils \
     && rm -f /sbin/halt /sbin/poweroff /sbin/reboot \
     && mkdir -p /var/lib/nfs/rpc_pipefs \
     && mkdir -p /var/lib/nfs/v4recovery \
