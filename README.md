@@ -1,4 +1,4 @@
-[![build status][251]][232] [![commit][255]][231] [![version:x86_64][256]][235] [![size:x86_64][257]][235] [![version:armhf][258]][236] [![size:armhf][259]][236]
+[![build status][251]][232] [![commit][255]][231] [![version:x86_64][256]][235] [![size:x86_64][257]][235] [![version:armhf][258]][236] [![size:armhf][259]][236] [![version:armv7l][260]][237] [![size:armv7l][261]][237] [![version:aarch64][262]][238] [![size:aarch64][263]][238]
 
 ## [Alpine-NFS][234]
 #### Container for Alpine Linux + NFS File server
@@ -18,11 +18,13 @@ the [s6][133] init system [overlayed][134] in it.
 
 The image is tagged respectively for the following architectures,
 * **armhf**
+* **armv7l**
+* **aarch64**
 * **x86_64** (retagged as the `latest` )
 
-**armhf** builds have embedded binfmt_misc support and contain the
+**non-x86_64** builds have embedded binfmt_misc support and contain the
 [qemu-user-static][105] binary that allows for running it also inside
-an x64 environment that has it.
+an x86_64 environment that has it.
 
 ---
 #### Get the Image
@@ -93,6 +95,26 @@ docker run --rm -it \
   woahbase/alpine-nfs:x86_64
 ```
 
+Running `make shell ` gets a shell inside the container,
+but does not run the init system, so that it can be done manually.
+
+```
+# make shell
+docker run --rm -it \
+  --name docker_nfs --hostname nfs \
+  --entrypoint /bin/bash \
+  --privileged \
+  -c 256 -m 256m \
+  -e NFSMODE=SERVER \
+  -e PGID=1000 -e PUID=1000 \
+  -p 111:111/tcp -p 111:111/udp \
+  -p 2049:2049/tcp -p 2049:2049/udp \
+  -v /data:/data \
+  -v /etc/hosts:/etc/hosts:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  woahbase/alpine-nfs:x86_64
+```
+
 Stop the container with a timeout, (defaults to 2 seconds)
 
 ```
@@ -122,14 +144,14 @@ docker restart docker_nfs
 Get a shell inside a already running container,
 
 ```
-# make shell
+# make debug
 docker exec -it docker_nfs /bin/bash
 ```
 
 set user or login as root,
 
 ```
-# make rshell
+# make rdebug
 docker exec -u root -it docker_nfs /bin/bash
 ```
 
@@ -179,11 +201,9 @@ for other architectures.]
 docker build --rm --compress --force-rm \
   --no-cache=true --pull \
   -f ./Dockerfile_x86_64 \
-  --build-arg ARCH=x86_64 \
-  --build-arg DOCKERSRC=alpine-s6 \
+  --build-arg DOCKERSRC=woahbase/alpine-s6:x86_64 \
   --build-arg PGID=1000 \
   --build-arg PUID=1000 \
-  --build-arg USERNAME=woahbase \
   -t woahbase/alpine-nfs:x86_64 \
   .
 ```
@@ -242,6 +262,8 @@ Maintained by [WOAHBase][204].
 [234]: https://woahbase.online/#/images/alpine-nfs
 [235]: https://microbadger.com/images/woahbase/alpine-nfs:x86_64
 [236]: https://microbadger.com/images/woahbase/alpine-nfs:armhf
+[237]: https://microbadger.com/images/woahbase/alpine-nfs:armv7l
+[238]: https://microbadger.com/images/woahbase/alpine-nfs:aarch64
 
 [251]: https://travis-ci.org/woahbase/alpine-nfs.svg?branch=master
 
@@ -252,3 +274,9 @@ Maintained by [WOAHBase][204].
 
 [258]: https://images.microbadger.com/badges/version/woahbase/alpine-nfs:armhf.svg
 [259]: https://images.microbadger.com/badges/image/woahbase/alpine-nfs:armhf.svg
+
+[260]: https://images.microbadger.com/badges/version/woahbase/alpine-nfs:armv7l.svg
+[261]: https://images.microbadger.com/badges/image/woahbase/alpine-nfs:armv7l.svg
+
+[262]: https://images.microbadger.com/badges/version/woahbase/alpine-nfs:aarch64.svg
+[263]: https://images.microbadger.com/badges/image/woahbase/alpine-nfs:aarch64.svg
