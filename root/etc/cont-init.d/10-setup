@@ -1,9 +1,0 @@
-#!/usr/bin/with-contenv bash
-
-NFSMODE="${NFSMODE:-SERVER}"
-
-# dont export if not server
-if [ "${NFSMODE}" = "SERVER" ];
-then
-    exportfs -rv
-fi;

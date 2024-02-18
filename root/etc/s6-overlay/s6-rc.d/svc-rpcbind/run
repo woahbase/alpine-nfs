@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+RPCBIND_ARGS="${RPCBIND_ARGS:- -fw}";
+echo "Starting rpcbind...";
+exec \
+    rpcbind ${RPCBIND_ARGS};
+

@@ -1,0 +1,33 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+NFSMODE="${NFSMODE:-SERVER}";
+LOCKD_PORT="${LOCKD_PORT:-32768}";
+EXPORTFS_ARGS="${EXPORTFS_ARGS:- -afrv}";
+
+mkdir -p \
+    /data;
+
+# dont export if not server
+if [ "${NFSMODE^^}" = "SERVER" ];
+then
+    mount -t nfsd nfsd /proc/fs/nfsd;
+    mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs;
+
+    # set static nlockmgr port, skip if already done while provisioning host
+    if [ -z "${SKIP_SYSCTL}" ];
+    then
+        sysctl -w fs.nfs.nlm_tcpport=${LOCKD_PORT} || true; ## will require privileged
+        sysctl -w fs.nfs.nlm_udpport=${LOCKD_PORT} || true;
+    fi;
+
+    # ensure exports file exists
+    if [ ! -f /etc/exports ];
+    then
+        cp /defaults/exports /etc/exports;
+    fi;
+
+    echo "Exporting mounts from /etc/exports...";
+    exportfs ${EXPORTFS_ARGS}
+fi;
+
