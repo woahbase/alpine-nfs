@@ -1,22 +1,29 @@
 #!/usr/bin/with-contenv bash
 set -e
 
+vecho () { if [ "${S6_VERBOSITY:-1}" -gt 0 ]; then echo "[$0] $@"; fi; }
+
 NFSMODE="${NFSMODE:-SERVER}";
+NFS_DATADIR="${NFS_DATADIR:-/data}";
 LOCKD_PORT="${LOCKD_PORT:-32768}";
 EXPORTFS_ARGS="${EXPORTFS_ARGS:- -afrv}";
 
+vecho "Ensure data-root directory exist: ${NFS_DATADIR}";
 mkdir -p \
-    /data;
+    ${NFS_DATADIR};
 
 # dont export if not server
 if [ "${NFSMODE^^}" = "SERVER" ];
 then
+    vecho "Ensure nfsd mounted.";
     mount -t nfsd nfsd /proc/fs/nfsd;
+    vecho "Ensure rpc_pipefs mounted.";
     mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs;
 
     # set static nlockmgr port, skip if already done while provisioning host
     if [ -z "${SKIP_SYSCTL}" ];
     then
+        vecho "Applying sysctl modifications.";
         sysctl -w fs.nfs.nlm_tcpport=${LOCKD_PORT} || true; ## will require privileged
         sysctl -w fs.nfs.nlm_udpport=${LOCKD_PORT} || true;
     fi;
@@ -24,10 +31,14 @@ then
     # ensure exports file exists
     if [ ! -f /etc/exports ];
     then
-        cp /defaults/exports /etc/exports;
+        vecho "Setting up default exports at /etc/exports.";
+        # cp /defaults/exports /etc/exports;
+        sed \
+            -e "s|NFS_DATADIR|$NFS_DATADIR|g" \
+        /defaults/exports > /etc/exports;
     fi;
 
-    echo "Exporting mounts from /etc/exports...";
+    vecho "Exporting mounts from /etc/exports...";
     exportfs ${EXPORTFS_ARGS}
 fi;
 

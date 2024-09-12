@@ -30,4 +30,12 @@ VOLUME /data/
 #
 EXPOSE 111/udp 111/tcp 2049/udp 2049/tcp 32765/tcp 32765/udp 32766/tcp 32766/udp 32767/tcp 32767/udp 32768/tcp 32768/udp
 #
+# HEALTHCHECK \
+#     --interval=2m \
+#     --retries=5 \
+#     --start-period=5m \
+#     --timeout=10s \
+#     CMD \
+#     bash -ec "${HEALTHCHECK_CMD:- nfsstat -s}" || exit 1
+#
 ENTRYPOINT ["/init"]

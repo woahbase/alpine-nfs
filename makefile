@@ -17,7 +17,7 @@ BUILDDATE := $(shell date -u +%Y%m%d)
 HOSTARCH  ?= $(call get_os_platform)
 # target architecture on build and run, defaults to host architecture
 ARCH      ?= $(HOSTARCH)
-IMAGEBASE ?= $(if $(filter scratch,$(SRCIMAGE)),scratch,$(REGISTRY)/$(ORGNAME)/$(OPSYS)-$(SRCIMAGE):$(ARCH))
+IMAGEBASE ?= $(if $(filter scratch,$(SRCIMAGE)),scratch,$(REGISTRY)/$(ORGNAME)/$(OPSYS)-$(SRCIMAGE):$(if $(SRCTAG),$(SRCTAG),$(ARCH)))
 IMAGETAG  ?= $(REGISTRY)/$(ORGNAME)/$(REPONAME):$(ARCH)
 CNTNAME   := docker_$(SVCNAME)
 CNTSHELL  := /bin/bash
@@ -41,10 +41,10 @@ LABELFLAGS ?= \
 	--label online.woahbase.branch=$(shell git rev-parse --abbrev-ref HEAD) \
 	--label online.woahbase.build-date=$(BUILDDATE) \
 	--label online.woahbase.build-number=$${BUILDNUMBER:-undefined} \
-	--label online.woahbase.source-image="$(if $(filter scratch,$(SRCIMAGE)),scratch,$(OPSYS)-$(SRCIMAGE):$(ARCH))" \
-	--label org.opencontainers.image.base.name="$(if $(filter scratch,$(SRCIMAGE)),scratch,docker.io/$(ORGNAME)/$(OPSYS)-$(SRCIMAGE):$(ARCH))" \
+	--label online.woahbase.source-image="$(if $(filter scratch,$(SRCIMAGE)),scratch,$(OPSYS)-$(SRCIMAGE):$(if $(SRCTAG),$(SRCTAG),$(ARCH)))" \
+	--label org.opencontainers.image.base.name="$(if $(filter scratch,$(SRCIMAGE)),scratch,docker.io/$(ORGNAME)/$(OPSYS)-$(SRCIMAGE):$(if $(SRCTAG),$(SRCTAG),$(ARCH)))" \
 	--label org.opencontainers.image.created=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
-	--label org.opencontainers.image.documentation="$(if $(DOC_URL),$(DOC_URL),https://woahbase.online/\#/images)/$(REPONAME)" \
+	--label org.opencontainers.image.documentation="$(if $(DOC_URL),$(DOC_URL),https://woahbase.online/images)/$(REPONAME)" \
 	--label org.opencontainers.image.revision=$(shell git rev-parse --short HEAD) \
 	--label org.opencontainers.image.source="$(shell git config --get remote.origin.url)" \
 	--label org.opencontainers.image.title=$(REPONAME) \
@@ -79,7 +79,11 @@ BUILDERFLAGS ?= \
 	#
 
 # runtime flags
-MOUNTFLAGS := -v $(CURDIR)/data:/data
+MOUNTFLAGS := \
+	-v $(CURDIR)/data:/data \
+	# -v /etc/hosts:/etc/hosts:ro \
+	# -v /etc/localtime:/etc/localtime:ro \
+	#
 PORTFLAGS  := \
 	-p 111:111/tcp     -p 111:111/udp \
 	-p 2049:2049/tcp   -p 2049:2049/udp \
@@ -87,7 +91,10 @@ PORTFLAGS  := \
 	-p 32766:32766/tcp -p 32766:32766/udp \
 	-p 32767:32767/tcp -p 32767:32767/udp \
 	-p 32768:32768/tcp -p 32768:32768/udp \
-	# --net=host # so other local containers can find it without explicit linking, needs firewall cleared
+	# # or use host network
+	# --net=host \
+	# # so other local containers can find it without explicit linking,
+	# # needs firewall cleared
 PUID       := $(shell id -u)
 PGID       := $(shell id -g)# gid 100(users) usually pre exists
 OTHERFLAGS := \
@@ -98,16 +105,13 @@ OTHERFLAGS := \
 	-e PGID=$(PGID) \
 	-e PUID=$(PUID) \
 	--privileged \
-	--net=host \
-	# -e NFSMODE=SERVER \
 	# -e SKIP_SYSCTL=1 \
 	# -e MOUNTD_ARGS="-F -N 2 -N 3 -p 32767 --debug all" \
 	# -e NFSD_ARGS="-N 3 --debug 8" \
 	# -e RPCBIND_ARGS="-fw" \
 	# -e STATD_ARGS="-p 32765 -o 32766 -F -d" \
+	# -e NFSMODE=SERVER \
 	# -e TZ=Asia/Kolkata \
-	# -v /etc/hosts:/etc/hosts:ro \
-	# -v /etc/localtime:/etc/localtime:ro \
 	#
 # all runtime flags combined here
 RUNFLAGS   := \
@@ -156,9 +160,11 @@ client : # test mount in another container in local
 		&& mount -av \
 		&& ls -a /mnt';
 
+# refer: https://www.baeldung.com/linux/docker-mount-nfs-shares
 client_volume : # test mount in another container in local
 	docker run --rm -it \
 		--hostname nfsclient --name docker_nfsclient \
+		--entrypoint /bin/bash \
 		-c 256 -m 256m \
 		-e PGID=$(PGID) -e PUID=$(PUID) \
 		--privileged \
@@ -166,7 +172,8 @@ client_volume : # test mount in another container in local
 		-e NFSMODE=client \
 		--mount 'type=volume,source=nfsvolume,target=/mnt,volume-driver=local,volume-opt=type=nfs,"volume-opt=o=addr=127.0.0.1,rw,nfsvers=4,sync,hard",volume-opt=device=:/' \
 		$(IMAGETAG) \
-		$(CNTSHELL)
+		# $(CNTSHELL) \
+	#
 
 shell : ## start a shell
 	docker run --rm -it $(RUNFLAGS) --entrypoint $(CNTSHELL) $(IMAGETAG)

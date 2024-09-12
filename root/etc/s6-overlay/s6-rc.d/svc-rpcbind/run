@@ -1,8 +1,13 @@
 #!/usr/bin/with-contenv bash
 set -e
 
+vecho () { if [ "${S6_VERBOSITY:-1}" -gt 0 ]; then echo "[$0] $@"; fi; }
+
 RPCBIND_ARGS="${RPCBIND_ARGS:- -fw}";
-echo "Starting rpcbind...";
+
+vecho "Starting rpcbind...";
 exec \
-    rpcbind ${RPCBIND_ARGS};
+    rpcbind \
+    ${RPCBIND_ARGS} \
+    ;
 

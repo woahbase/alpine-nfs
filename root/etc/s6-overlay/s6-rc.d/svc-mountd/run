@@ -1,23 +1,32 @@
 #!/usr/bin/with-contenv bash
 set -e
 
+vecho () { if [ "${S6_VERBOSITY:-1}" -gt 0 ]; then echo "[$0] $@"; fi; }
+
 NFSMODE="${NFSMODE:-SERVER}";
+
 # NFSD_ARGS="${NFSD_ARGS:- -N 2 -N 3 --debug 8}"; # previously
 NFSD_ARGS="${NFSD_ARGS:- --debug 8}";
-echo "Running nfsd..."; # not running in foreground
-# exec \
-rpc.nfsd ${NFSD_ARGS};
 
 MOUNTD_PORT="${MOUNTD_PORT:-32767}";
 # MOUNTD_ARGS="${MOUNTD_ARGS:- -F -N 2 -N 3 -p $MOUNTD_PORT --debug all}"; # previously
 MOUNTD_ARGS="${MOUNTD_ARGS:- -F -p $MOUNTD_PORT --debug all}";
+
+vecho "Running nfsd in daemon mode..."; # not running in foreground
+# exec \
+rpc.nfsd \
+    ${NFSD_ARGS} \
+    ;
+
 # dont run mountd if not server
 if [ "${NFSMODE^^}" = "SERVER" ];
 then
-    echo "Starting mountd..."; # running in foreground
+    vecho "Starting mountd..."; # running in foreground
     exec \
-        rpc.mountd ${MOUNTD_ARGS};
+        rpc.mountd \
+        ${MOUNTD_ARGS} \
+        ;
 else
-    echo "Skip Starting mountd for client...";
+    vecho "Skip Starting mountd for client...";
     sleep infinity;
 fi;

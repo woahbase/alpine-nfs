@@ -1,6 +1,8 @@
 #!/usr/bin/with-contenv bash
 set -e
 
+vecho () { if [ "${S6_VERBOSITY:-1}" -gt 0 ]; then echo "[$0] $@"; fi; }
+
 NFSMODE="${NFSMODE:-SERVER}";
 STATD_PORT="${STATD_PORT:-32765}";
 STATD_OUTGOING_PORT="${STATD_OUTGOING_PORT:-32766}";
@@ -9,11 +11,13 @@ STATD_ARGS="${STATD_ARGS:- --port $STATD_PORT --outgoing-port $STATD_OUTGOING_PO
 # dont run statd if not server
 if [ "${NFSMODE^^}" = "SERVER" ];
 then
-    echo "Starting statd...";
+    vecho "Starting statd...";
     exec \
-        rpc.statd ${STATD_ARGS};
+        rpc.statd \
+        ${STATD_ARGS} \
+        ;
 else
-    echo "Skip Starting statd for client...";
+    vecho "Skip Starting statd for client...";
     sleep infinity;
 fi;
 

@@ -1,1 +1,1 @@
-/data *(rw,wdelay,fsid=0,root_squash,no_subtree_check,insecure)
+NFS_DATADIR *(rw,wdelay,fsid=0,root_squash,no_subtree_check,insecure)
